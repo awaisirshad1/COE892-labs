@@ -31,8 +31,14 @@ def extract_map_into_array(path: str):
     return num_rows, num_columns, mine_map
 
 
+# API to create cartesian plane grid with map contents
+def create_grid(rover_moves: str, mine_map: list):
+    max_possible_moves_forward = rover_moves.count('M')
+    return 0
+
+
 # API to calculate the path of the rover
-def create_path(rover_moves: str, rover_num: int, mine_map: list[int][int]):
+def create_path(rover_moves: str, rover_num: int, mine_map: list):
     # starting off by facing south
     current_direction = 0
     current_action = 0
@@ -94,7 +100,23 @@ def create_path(rover_moves: str, rover_num: int, mine_map: list[int][int]):
       print the array in sequential order, row by row, we would have to have the 
       highest row (in terms of y values) at the first index of our array. To ensure
       that our array is output to the file correctly, we have to coordinate both of
-      our structure for printing and arranging our grid. A simple structure 
+      our structure for printing and arranging our grid. A simple structure that
+      ensures coordination is having the lowest y-values of the cartesian plane be
+      in the last row of the 2D array. This means that y = L will correspond to the
+      row grid[0] and y = -L will correspond to the row grid[2L]. Here is a quick
+      show of how they will correspond:
+      
+      grid[0]       : y = L             greatest y-value
+      grid[1]       : y = L - 1
+      grid[2]       : y = L - 2
+      ...
+      grid[L - 1]   : y = 0
+      grid[L]       : will be used to map the x-axis like: ----------------
+      grid[L+1]     : y = -1
+      grid[L+2]     : y = -2
+      ....
+      grid[2L]      : y = -L            lowest y-value    
+      
       
     '''
     directions = ['S', 'E', 'N', 'W']
