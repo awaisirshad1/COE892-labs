@@ -34,11 +34,12 @@ def extract_map_into_array(path: str):
 # API to create cartesian plane grid with map contents
 def create_grid(rover_moves: str, mine_map: list):
     max_possible_moves_forward = rover_moves.count('M')
+
     return 0
 
 
 # API to calculate the path of the rover
-def create_path(rover_moves: str, rover_num: int, mine_map: list):
+def draw_path(rover_moves: str, rover_num: int, mine_map: list):
     # starting off by facing south
     current_direction = 0
     current_action = 0
@@ -83,18 +84,17 @@ def create_path(rover_moves: str, rover_num: int, mine_map: list):
       
       We need to draw the rover's path on the given map. The given map's domain is 
       [0, num_columns] for x and [0, num_rows] for y. This may be a smaller area 
-      than the area the rover explores, so we need to dynamically expand the grid 
-      as the rover explores. A quick way to check the dimensions we will need for 
+      than the area the rover explores, so we need a grid larger than the map.
+      
+      A quick way to check the dimensions we will need for 
       our grid is to check the amount of Ms in the given rover's path, and use that
       amount for our grid in every direction, that way our rover's path can fully be 
       mapped in our path_i.txt file. We will call the amount of Ms in a path L.
       
       One thing to consider to better represent the path of the rover is to show it
-      on the cartesian plane. To do this, we will initialize a 2D array, each being 
-      2L + 1 in length. The reason for this is to firstly allow for L moves in each 
-      direction (N, S, E, W) which is where 2L comes from. The added 1 allows for an
-      extra index that allows us to insert - and | characters, which will act as the
-      grid lines. 
+      on the cartesian plane. To do this, we will initialize a 2D array, each 
+      subarray being 2L in length. The reason for this is to firstly allow for L moves 
+      in each direction (N, S, E, W) which is where 2L comes from. 
       
       We also have to consider how we print the array to the file. If we were to 
       print the array in sequential order, row by row, we would have to have the 
@@ -110,14 +110,39 @@ def create_path(rover_moves: str, rover_num: int, mine_map: list):
       grid[1]       : y = L - 1
       grid[2]       : y = L - 2
       ...
-      grid[L - 1]   : y = 0
-      grid[L]       : will be used to map the x-axis like: ----------------
+      grid[L - 1]   : y = 0         will be used to map the x-axis like: ----------------
       grid[L+1]     : y = -1
       grid[L+2]     : y = -2
       ....
-      grid[2L]      : y = -L            lowest y-value    
+      grid[2L - 1]  : y = -L            lowest y-value    
       
+      Similarly, for every row in the array, the first L - 1 elements (from index 0 
+      to L - 2) will be used to represent the negative x values, index L - 1 will 
+      represent the y-axis through | characters (or a 1 where there is a mine), 
+      and the remaining indices from L to 2L - 1 will represent the positive x values.
+      The API create_grid accomplishes this task. 
       
+      To allow for easy mapping of the path of the rover to the grid, we will change
+      the initial current position (starts at (0,0) on cartesian plane) to the some
+      values that correspond to our array's origin, which will be (L-1, L-1) in terms
+      of indices of the grid array.  If we move forward facing east, increase the 
+      second index by 1, west decreases by 1. If we move northward, we decrease the 
+      first index by 1, southward increases by 1. This will make it easy for us to
+      insert the movements of the rover into our 2D array. Digging does nothing to 
+      change the index. 
+      
+      Upon encountering a 'move forward', we need to check the current_direction the 
+      rover is facing to know how to change the indices of the grid. Based on it's 
+      value, we can know how much to change the current_location variable by. To do
+      this, we can have a hashmap that maps the change to the current direction it is
+      facing. We can represent it as follows: 
+      
+      change_in_position = { 'N': (-1,0), 'S': (1,0), 'E': (0,1), 'W': (0,-1) }
+      
+      By adding the value of each key-value pair to the current_position variable, 
+      we get the new position of the rover in terms of indices of the grid array. It
+      allows for quick changing of the contents of the grid array. 
+       
     '''
     directions = ['S', 'E', 'N', 'W']
     # move forward, dig
