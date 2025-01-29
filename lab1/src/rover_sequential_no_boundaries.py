@@ -136,21 +136,27 @@ def extract_map_into_array(path: str):
 def create_grid(rover_moves: str, mine_map: list):
     # first count how many Ms we have in a rover's moves, the value of L
     L = rover_moves.count('M')
+    print(f'printing L:{L}')
     # now create a 2D array that is 2L by 2L, all initialized to 0, except
     # for the contents of the map we are given and the x and y axes
     # if the location of a mine coincides with any of the x or y axes,
     # then replace the - or | with 1. The origin will be (L-1, L-1)
     origin = [L - 1, L - 1]
     # creating the array
-    grid = [[]]
+    # grid = [[]]
+    grid = [[None for j in range(2*L+1)] for i in range(2*L+1)]
+    # print(f'printing grid[0][0]:{grid[0][0]}')
+    # print(f'printing grid size:{len(grid[0])}')
+    print(f'L - len(minemap) = {L - len(mine_map)}')
+    print(f'len(minemap):{len(mine_map)}')
     # i indicates y coordinate, j indicates x coordinate
-    for i in range(2*L):
-        for j in range(2*L):
-            if i in range(L - len(mine_map), L):
-                if j in range(L, L+len(mine_map[0])):
-                    grid[i][j] =
+    for i in range((2*L)+1):
+        for j in range((2*L)+1):
+            if (i > (L - len(mine_map))) and (i <= L):
+                if(j >= L) and (j < (L + len(mine_map[0]))):
+                    grid[i][j] = mine_map[L-i][L+j]
             # if j is along y-axis (x=0 corresponds to j=L)
-            if j == L:
+            elif j == L:
                 grid[i][j] = '|'
             # if the next condition executes, j is not along the y-axis, now
             # check the x-axis (y=0 corresponds to i=L)
@@ -158,28 +164,31 @@ def create_grid(rover_moves: str, mine_map: list):
                 grid[i][j] = '-'
             # if neither of the other 2 conditions are true, fill the current
             # element with a 0
-            elif
+            else:
+                grid[i][j] = '0'
+    return grid
+    # return 0
 
-    return 0
 
-
-# API to calculate the path of the rover
+# API to draw the path of the rover on path_i.txt file
 def draw_path(rover_moves: str, rover_num: int, mine_map: list):
     # starting off by facing south
     current_direction = 0
     current_action = 0
     current_position = [0,0]
-    grid = [[]]
+    grid = create_grid(rover_moves, mine_map)
 
     directions = ['S', 'E', 'N', 'W']
     # move forward, dig
     moves = ['M', 'D']
     # loop through the given rover's moves
-    for i in range(len(rover_moves)):
-        # first test if we are turning left or right
-        if True:
-            print('true')
-
+    # for i in range(len(rover_moves)):
+    #     # first test if we are turning left or right
+    #     if True:
+    #         print('true')
+    with open(f'../sequential/path_{rover_num}.txt', 'w') as f:
+        for r_row in grid:
+            f.write("".join(r_row)+"\n")
     return 0
 
 
@@ -191,7 +200,9 @@ def main():
     # get paths of all rovers, store in an array
     for i in range(1, 11):
         rover_moves.append(extract_rover_path(rover_path_url, i))
-    print(f'rover_moves:{rover_moves}')
+    # print(f'rover_moves:{rover_moves}')
+
+    draw_path(rover_moves[0], 1, map1_contents)
 
 
 if __name__ == '__main__':
