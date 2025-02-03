@@ -135,7 +135,7 @@ def draw_rover_path(rover_moves: str, map_txt: list):
                             current_direction == 2 and current_position[0] != 0) or (
                             current_direction == 1 and current_position[1] != right_boundary) or (
                             current_direction == 3 and current_position[1] != 0):
-                        print(f'current_position:{current_position}')
+                        # print(f'current_position:{current_position}')
                         # if we are on a mine, blow up
                         if map_txt[current_position[0]][current_position[1]] == 1:
                             result[current_position[0]][current_position[1]] = 'X'
