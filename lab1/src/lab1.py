@@ -1,5 +1,6 @@
 import rover_utils as rvr
-import rover_sequential as sequential
+import rover_sequential
+import rover_parallel
 import time
 
 
@@ -13,11 +14,18 @@ def main():
     for i in range(1, 11):
         rover_moves.append(rvr.extract_rover_moves(rover_path_url, i))
     # print(f'rover_moves:{rover_moves}')
+    # SEQUENTIAL EXECUTION FOR QUESTION 1 PART 1
     start = time.time()
-    sequential.sequential_rovers(rover_moves, map1_contents)
+    rover_sequential.sequential_rovers(rover_moves, map1_contents)
     end = time.time()
     sequential_q1_execution_time = end - start
     print(f'Question 1 sequential execution time total:{sequential_q1_execution_time}s')
+    # PARALLEL EXECUTION FOR QUESTION 1 PART 2
+    start = time.time()
+    rover_parallel.parallel_rovers(rover_moves, map1_contents)
+    end = time.time()
+    parallel_q1_execution_time = end - start
+    print(f'Question 1 parallel execution time total:{parallel_q1_execution_time}s')
 
 
 
