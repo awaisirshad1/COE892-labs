@@ -29,8 +29,12 @@ def main():
     print(f'Question 1 parallel execution time total:{parallel_q1_execution_time}s')
 
 
-
-
+    diff_computation_times_part1 = abs(sequential_q1_execution_time - parallel_q1_execution_time)
+    percentage_diff_comp_times_part1 = (diff_computation_times_part1/((sequential_q1_execution_time + parallel_q1_execution_time)/2)) * 100
+    msg = f'The threading approach is faster by {percentage_diff_comp_times_part1}%, with a difference of {diff_computation_times_part1} seconds' \
+        if sequential_q1_execution_time > parallel_q1_execution_time \
+        else f'The sequential approach is faster by {percentage_diff_comp_times_part1}%, with a difference of {diff_computation_times_part1} seconds'
+    print(msg)
 
 
 if __name__ == '__main__':
