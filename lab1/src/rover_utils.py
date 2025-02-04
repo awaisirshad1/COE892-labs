@@ -1,5 +1,6 @@
 import requests
 import json
+import copy
 
 '''
 HOW TO CHANGE DIRECTION:
@@ -87,25 +88,27 @@ def extract_map_into_array(file_path: str):
     # first integer is number of rows, second integer is number of columns
     num_rows, num_columns = map_contents[0], map_contents[1]
     # after we've assigned these to variables, pop them off the array
-    map_contents = map_contents[2:]
+    map_without_dimensions = map_contents[2:]
     # Now we can take the remaining numbers (which should all be 1s and 0s)
     # and assign them to a 2D array based on numbers of rows and columns
     map_txt_contents = [[None for j in range(num_columns)] for i in range(num_rows)]
     for i in range(num_rows):
         for j in range(num_columns):
-            map_txt_contents[i][j] = map_contents.pop(0)
+            map_txt_contents[i][j] = map_without_dimensions.pop(0)
     # return the 2D array
     return map_txt_contents
 
 
-# API to draw moves in 'result' array
+# API to draw moves in 'result' array for a given rover
 def draw_rover_path(rover_moves: str, map_txt: list):
+    # deep copy the map_txt so that the original is never modified:
+    map_copy = copy.deepcopy(map_txt)
     current_direction = 0
     directions = ['S', 'E', 'N', 'W']
     current_position = [0, 0]
     change_in_position = {'N': (-1, 0), 'S': (1, 0), 'E': (0, 1), 'W': (0, -1)}
-    num_rows = len(map_txt)
-    num_columns = len(map_txt[0])
+    num_rows = len(map_copy)
+    num_columns = len(map_copy[0])
     right_boundary = num_columns - 1
     lower_boundary = num_rows - 1
     # the result will be stored in this array
@@ -137,7 +140,7 @@ def draw_rover_path(rover_moves: str, map_txt: list):
                             current_direction == 3 and current_position[1] != 0):
                         # print(f'current_position:{current_position}')
                         # if we are on a mine, blow up
-                        if map_txt[current_position[0]][current_position[1]] == 1:
+                        if map_copy[current_position[0]][current_position[1]] == 1:
                             result[current_position[0]][current_position[1]] = 'X'
                             break
                         # otherwise, move forward
@@ -147,16 +150,18 @@ def draw_rover_path(rover_moves: str, map_txt: list):
                 # if we aren't changing directions or moving forward, only possible instruction is to dig
                 elif rover_moves[i] == 'D':
                     # are we on a mine? if yes, it is disarmed
-                    if map_txt[current_position[0]][current_position[1]] == 1:
-                        map_txt[current_position[0]][current_position[1]] = 0
+                    if map_copy[current_position[0]][current_position[1]] == 1:
+                        map_copy[current_position[0]][current_position[1]] = 0
                 #       otherwise, do nothing
                 # no conditions met, therefore input error
                 else:
                     raise Exception('Invalid string input for rover moves: contains invalid character that is not L,'
                                     'R,M,D')
         # now fill in the rest of the map where the rover did not traverse
-        # their values in the 'result' array will be None
-        result = [[str(map_txt[x][y]) if result[x][y] is None else str(result[x][y]) for y in range(num_columns)] for x in range(num_rows)]
+        # their values in the 'result' array will be None, so only replace values equal to None
+        result = [[str(map_copy[x][y]) if result[x][y] is None else str(result[x][y]) for y in range(num_columns)] for x in range(num_rows)]
+        # print(f'map_txt:{map_txt}')
+        # print(f'map_copy:{map_copy}')
         return result
     except ValueError:
         print(f'error:{ValueError}')
@@ -164,6 +169,7 @@ def draw_rover_path(rover_moves: str, map_txt: list):
 
 # API to print the resulting array to a text file, called path_i.txt
 def print_path_to_file(path: str, i: int, path_array: list):
+    # print(f'path_array:{path_array}\n')
     f = open(f'{path}/path_{i}.txt', 'w')
     for j in range(len(path_array)):
         for k in range(len(path_array[j])):

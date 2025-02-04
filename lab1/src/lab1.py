@@ -20,12 +20,15 @@ def main():
     end = time.time()
     sequential_q1_execution_time = end - start
     print(f'Question 1 sequential execution time total:{sequential_q1_execution_time}s')
+
     # PARALLEL EXECUTION FOR QUESTION 1 PART 2
     start = time.time()
     rover_parallel.parallel_rovers(rover_moves, map1_contents)
     end = time.time()
     parallel_q1_execution_time = end - start
     print(f'Question 1 parallel execution time total:{parallel_q1_execution_time}s')
+
+
 
 
 

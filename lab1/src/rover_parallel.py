@@ -10,10 +10,9 @@ def map_rover_moves(thread_index: int, rover_moves: str, map_contents: list):
 def parallel_rovers(rover_moves: list, map_contents: list):
     threads = []
     for thread_index in range(1, 11):
-        curr_thread = threading.Thread(target=map_rover_moves, args={thread_index, rover_moves[thread_index-1], map_contents})
+        curr_thread = threading.Thread(target=map_rover_moves, args=(thread_index, rover_moves[thread_index-1], map_contents))
         threads.append(curr_thread)
         curr_thread.start()
-
     for t in threads:
         t.join()
     return
