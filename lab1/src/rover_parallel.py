@@ -4,7 +4,7 @@ import threading
 
 def map_rover_moves(thread_index: int, rover_moves: str, map_contents: list):
     resulting_map = rvr.draw_rover_path(rover_moves, map_contents)
-    rvr.print_path_to_file('../parallel', thread_index, resulting_map)
+    rvr.print_path_to_file('../parallel/part1', thread_index, resulting_map)
 
 
 def parallel_rovers(rover_moves: list, map_contents: list):
