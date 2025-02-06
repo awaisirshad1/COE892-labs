@@ -100,7 +100,7 @@ def extract_map_into_array(file_path: str):
 
 
 # API to draw moves in 'result' array for a given rover
-def draw_rover_path(rover_moves: str, map_txt: list):
+def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
     # deep copy the map_txt so that the original is never modified:
     map_copy = copy.deepcopy(map_txt)
     current_direction = 0
@@ -111,6 +111,8 @@ def draw_rover_path(rover_moves: str, map_txt: list):
     num_columns = len(map_copy[0])
     right_boundary = num_columns - 1
     lower_boundary = num_rows - 1
+    # the following boolean value is set to true upon encountering D for part 2
+    dig_instruction_given = False
     # the result will be stored in this array
     result = [[None for j in range(num_columns)] for k in range(num_rows)]
     i = 0
@@ -139,8 +141,8 @@ def draw_rover_path(rover_moves: str, map_txt: list):
                             current_direction == 1 and current_position[1] != right_boundary) or (
                             current_direction == 3 and current_position[1] != 0):
                         # print(f'current_position:{current_position}')
-                        # if we are on a mine, blow up
-                        if map_copy[current_position[0]][current_position[1]] == 1:
+                        # if we are on a mine, blow up, unless we've been given the continuous dig instruction
+                        if map_copy[current_position[0]][current_position[1]] == 1 and not dig_instruction_given:
                             result[current_position[0]][current_position[1]] = 'X'
                             break
                         # otherwise, move forward
@@ -149,6 +151,7 @@ def draw_rover_path(rover_moves: str, map_txt: list):
                             current_position = [current_position[idx] + change_in_position.get(directions[current_direction])[idx] for idx in range(2)]
                 # if we aren't changing directions or moving forward, only possible instruction is to dig
                 elif rover_moves[i] == 'D':
+                    if disarm_all_mines: dig_instruction_given = True
                     # are we on a mine? if yes, it is disarmed
                     if map_copy[current_position[0]][current_position[1]] == 1:
                         map_copy[current_position[0]][current_position[1]] = 0
