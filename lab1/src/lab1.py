@@ -41,20 +41,20 @@ def main():
     rover_sequential.sequential_rovers_part2(rover_moves, map1_contents)
     end = time.time()
     sequential_execution_time_part2 = end - start
-    print(f'Question 1 sequential execution time total:{sequential_execution_time_part2}s')
+    print(f'Question 2 sequential execution time total:{sequential_execution_time_part2}s')
 
     # PARALLEL EXECUTION FOR PART 2
     start = time.time()
     rover_parallel.parallel_rovers_part2(rover_moves, map1_contents)
     end = time.time()
     parallel_execution_time_part2 = end - start
-    print(f'Question 1 parallel execution time total:{parallel_execution_time_part2}s')
+    print(f'Question 2 parallel execution time total:{parallel_execution_time_part2}s')
 
     diff_computation_times_part2 = abs(sequential_execution_time_part2 - parallel_execution_time_part2)
     percentage_diff_comp_times_part2 = (diff_computation_times_part2 / (
                 (sequential_execution_time_part2 + parallel_execution_time_part2) / 2)) * 100
     msg = f'The threading approach is faster by {percentage_diff_comp_times_part2}%, with a difference of {diff_computation_times_part2} seconds' \
-        if sequential_execution_time_part1 > parallel_q1_execution_time \
+        if sequential_execution_time_part2 > parallel_q1_execution_time \
         else f'The sequential approach is faster by {percentage_diff_comp_times_part2}%, with a difference of {diff_computation_times_part2} seconds'
     print(msg)
 

@@ -1,6 +1,7 @@
 import requests
 import json
 import copy
+import hashlib
 
 '''
 HOW TO CHANGE DIRECTION:
@@ -79,6 +80,14 @@ def extract_rover_moves(url: str, num: int):
         json_data = json.loads(res.text)
         # print(json_data['data']['moves'])
         return json_data['data']['moves']
+
+
+# API to extract mines.txt
+def extract_mines_to_array(path_to_mines: str):
+    with open(path_to_mines, 'r') as file:
+        # Read all lines and strip any extra whitespace (like newlines)
+        strings_list = [line.strip() for line in file.readlines()]
+        return
 
 
 # API to extract map into a 2D array
@@ -173,9 +182,9 @@ def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
 # API to print the resulting array to a text file, called path_i.txt
 def print_path_to_file(path: str, i: int, path_array: list):
     # print(f'path_array:{path_array}\n')
-    f = open(f'{path}/path_{i}.txt', 'w')
-    for j in range(len(path_array)):
-        for k in range(len(path_array[j])):
-            f.writelines(path_array[j][k]+' ')
-        f.write('\n')
+    with open(f'{path}/path_{i}.txt', 'w') as file:
+        for j in range(len(path_array)):
+            for k in range(len(path_array[j])):
+                file.writelines(path_array[j][k]+' ')
+            file.write('\n')
 
