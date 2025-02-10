@@ -4,7 +4,11 @@ import copy
 import hashlib
 import string
 import random
+import threading
 
+
+found_event = threading.Event()
+parallel_results = None
 '''
 HOW TO CHANGE DIRECTION:
     south, east, north, west, will use index of 'directions' to indicate the
@@ -92,9 +96,8 @@ def extract_mines_to_array(path_to_mines: str):
         return mine_serial_numbers
 
 
-# API to disarm and disable mines based on a pin
-def compute_pin_for_given_mine(mine_index: int, mine_serial_numbers: list):
-    serial_num = mine_serial_numbers[mine_index - 1]
+# API to disarm and disable mines based on a pin (sequential)
+def compute_pin_for_given_mine_sequential(serial_num: str):
     valid_hash_prefix = '000000'
     while True:
         pin = random.choices(string.ascii_letters + string.digits, k=8)
@@ -102,6 +105,37 @@ def compute_pin_for_given_mine(mine_index: int, mine_serial_numbers: list):
         hashed_string = hashlib.sha256(random_str.encode()).hexdigest()
         if hashed_string.startswith(valid_hash_prefix):
             print(f'found pin for mine: {serial_num}, pin: {pin}')
+            return pin
+
+
+# API to disarm and disable mines based on a pin (parallel)
+def compute_pin_for_given_mine_parallel(serial_num: str):
+    # results = []
+    threads = []
+    for thread_index in range(1, 11):
+        curr_thread = threading.Thread(target=compute_pin_individual_thread, args=(serial_num,))
+        threads.append(curr_thread)
+        curr_thread.start()
+    found_event.wait()
+    for t in threads:
+        t.join()
+    # results.append(parallel_results)
+    return parallel_results
+
+
+# API for use with threads and events
+def compute_pin_individual_thread(serial_num: str):
+    valid_hash_prefix = '000000'
+    while not found_event.is_set():
+        pin = random.choices(string.ascii_letters + string.digits, k=10)
+        random_str = serial_num + ''.join(pin)
+        hashed_string = hashlib.sha256(random_str.encode()).hexdigest()
+        if hashed_string.startswith(valid_hash_prefix):
+            global parallel_results
+            if not found_event.is_set():
+                print(f'found pin for mine: {serial_num}, pin: {pin}')
+                parallel_results = pin
+                found_event.set()
             return pin
 
 
@@ -125,7 +159,7 @@ def extract_map_into_array(file_path: str):
 
 
 # API to draw moves in 'result' array for a given rover for part 1
-def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
+def draw_rover_path_part1(rover_moves: str, map_txt: list):
     # deep copy the map_txt so that the original is never modified:
     map_copy = copy.deepcopy(map_txt)
     current_direction = 0
@@ -191,6 +225,86 @@ def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
         return result
     except ValueError:
         print(f'error:{ValueError}')
+
+
+# API to draw moves in 'result' array for a given rover for part 2
+def draw_rover_path_part2(rover_moves: str, map_txt: list, parallel: bool):
+    # deep copy the map_txt so that the original is never modified:
+    map_copy = copy.deepcopy(map_txt)
+    mines = extract_mines_to_array('../mines.txt')
+    current_direction = 0
+    directions = ['S', 'E', 'N', 'W']
+    current_position = [0, 0]
+    change_in_position = {'N': (-1, 0), 'S': (1, 0), 'E': (0, 1), 'W': (0, -1)}
+    num_rows = len(map_copy)
+    num_columns = len(map_copy[0])
+    right_boundary = num_columns - 1
+    lower_boundary = num_rows - 1
+    autodig = False
+    mine_counter = 0
+    # the result will be stored in this array
+    result = [[None for j in range(num_columns)] for k in range(num_rows)]
+    # valid pins will be stored in this array
+    valid_pins = []
+    i = 0
+    try:
+        for i in range(len(rover_moves)):
+            # direction change?
+            if rover_moves[i] == 'R' or rover_moves[i] == 'L':
+                # if we are turning left
+                if rover_moves[i] == 'L':
+                    current_direction = (current_direction + 5) % 4
+                # if we are turning right
+                else:
+                    current_direction = (current_direction + 3) % 4
+            # no direction change
+            else:
+                # are we moving forward?
+                if rover_moves[i] == 'M':
+                    # if we are not at a border
+                    # if we are facing south (0) and not at the lower boundary OR
+                    # if we are facing north (2) and not at the upper boundary OR
+                    # if we are facing east (1) and not at the right boundary OR
+                    # if we are facing west (3) and not at the left boundary
+                    # THEN we may move forward depending on if we are on a mine
+                    if (current_direction == 0 and current_position[0] != lower_boundary) or (
+                            current_direction == 2 and current_position[0] != 0) or (
+                            current_direction == 1 and current_position[1] != right_boundary) or (
+                            current_direction == 3 and current_position[1] != 0):
+                        # print(f'current_position:{current_position}')
+                        # if we are on a mine, blow up, unless we haven't been given the continuous dig instruction
+                        if map_copy[current_position[0]][current_position[1]] == 1:
+                            mine_counter += 1
+                            if not autodig:
+                                result[current_position[0]][current_position[1]] = 'X'
+                                break
+                            else:
+                                valid_pins.append(compute_pin_for_given_mine_parallel(mines[mine_counter-1])) if parallel else valid_pins.append(compute_pin_for_given_mine_sequential(mines[mine_counter-1]))
+                                map_copy[current_position[0]][current_position[1]] = 0
+                        # otherwise, move forward
+                        else:
+                            result[current_position[0]][current_position[1]] = '*'
+                            current_position = [current_position[idx] + change_in_position.get(directions[current_direction])[idx] for idx in range(2)]
+                # if we aren't changing directions or moving forward, only possible instruction is to dig
+                elif rover_moves[i] == 'D':
+                    autodig = True
+                    # are we on a mine? if yes we compute the pin for part 2
+                    if map_copy[current_position[0]][current_position[1]] == 1:
+                        map_copy[current_position[0]][current_position[1]] = 0
+                #       otherwise, do nothing
+                # no conditions met, therefore input error
+                else:
+                    raise Exception('Invalid string input for rover moves: contains invalid character that is not L,'
+                                    'R,M,D')
+        # now fill in the rest of the map where the rover did not traverse
+        # their values in the 'result' array will be None, so only replace values equal to None
+        result = [[str(map_copy[x][y]) if result[x][y] is None else str(result[x][y]) for y in range(num_columns)] for x in range(num_rows)]
+        # print(f'map_txt:{map_txt}')
+        # print(f'map_copy:{map_copy}')
+        return result, valid_pins
+    except ValueError:
+        print(f'error:{ValueError}')
+
 
 
 # API to print the resulting array to a text file, called path_i.txt
