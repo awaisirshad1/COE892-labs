@@ -2,6 +2,8 @@ import requests
 import json
 import copy
 import hashlib
+import string
+import random
 
 '''
 HOW TO CHANGE DIRECTION:
@@ -86,8 +88,22 @@ def extract_rover_moves(url: str, num: int):
 def extract_mines_to_array(path_to_mines: str):
     with open(path_to_mines, 'r') as file:
         # Read all lines and strip any extra whitespace (like newlines)
-        strings_list = [line.strip() for line in file.readlines()]
-        return
+        mine_serial_numbers = [line.strip() for line in file.readlines()]
+        return mine_serial_numbers
+
+
+# API to disarm and disable mines based on a pin
+def compute_pin_for_given_mine(mine_index: int, mine_serial_numbers: list):
+    serial_num = mine_serial_numbers[mine_index - 1]
+    valid_hash_prefix = '000000'
+    while True:
+        pin = random.choices(string.ascii_letters + string.digits, k=8)
+        random_str = serial_num + ''.join(pin)
+        hashed_string = hashlib.sha256(random_str.encode()).hexdigest()
+        if hashed_string.startswith(valid_hash_prefix):
+            print(f'found pin for mine: {serial_num}, pin: {pin}')
+            return pin
+
 
 
 # API to extract map into a 2D array
@@ -108,7 +124,7 @@ def extract_map_into_array(file_path: str):
     return map_txt_contents
 
 
-# API to draw moves in 'result' array for a given rover
+# API to draw moves in 'result' array for a given rover for part 1
 def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
     # deep copy the map_txt so that the original is never modified:
     map_copy = copy.deepcopy(map_txt)
@@ -120,8 +136,6 @@ def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
     num_columns = len(map_copy[0])
     right_boundary = num_columns - 1
     lower_boundary = num_rows - 1
-    # the following boolean value is set to true upon encountering D for part 2
-    dig_instruction_given = False
     # the result will be stored in this array
     result = [[None for j in range(num_columns)] for k in range(num_rows)]
     i = 0
@@ -151,7 +165,7 @@ def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
                             current_direction == 3 and current_position[1] != 0):
                         # print(f'current_position:{current_position}')
                         # if we are on a mine, blow up, unless we've been given the continuous dig instruction
-                        if map_copy[current_position[0]][current_position[1]] == 1 and not dig_instruction_given:
+                        if map_copy[current_position[0]][current_position[1]] == 1:
                             result[current_position[0]][current_position[1]] = 'X'
                             break
                         # otherwise, move forward
@@ -160,8 +174,8 @@ def draw_rover_path(rover_moves: str, map_txt: list, disarm_all_mines: bool):
                             current_position = [current_position[idx] + change_in_position.get(directions[current_direction])[idx] for idx in range(2)]
                 # if we aren't changing directions or moving forward, only possible instruction is to dig
                 elif rover_moves[i] == 'D':
-                    if disarm_all_mines: dig_instruction_given = True
-                    # are we on a mine? if yes, it is disarmed
+                    # if disarm_all_mines: dig_instruction_given = True
+                    # are we on a mine? if yes, it is disarmed in part 1, we compute the pin for part 2
                     if map_copy[current_position[0]][current_position[1]] == 1:
                         map_copy[current_position[0]][current_position[1]] = 0
                 #       otherwise, do nothing
