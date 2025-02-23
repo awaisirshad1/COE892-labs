@@ -1,0 +1,6 @@
+syntax = "proto3";
+package protobufs;
+
+message land_array {
+  repeated uint32 values = 1;
+}

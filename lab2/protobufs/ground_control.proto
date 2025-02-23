@@ -1,0 +1,11 @@
+syntax = "proto3";
+package protobufs;
+
+import "google/protobuf/empty.proto";
+import "land_array.proto";
+
+service ground_control {
+  rpc get_map(google.protobuf.Empty) returns (land_array);
+
+  rpc get_movements() returns (rover_movements);
+}
