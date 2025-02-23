@@ -3,12 +3,7 @@
 import grpc
 import warnings
 
-from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-import land_array_pb2 as land__array__pb2
-import mines_pb2 as mines__pb2
-import rover_mine_pin_pb2 as rover__mine__pin__pb2
-import rovers_pb2 as rovers__pb2
-import status_pb2 as status__pb2
+import ground_control_pb2 as ground__control__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
@@ -30,7 +25,7 @@ if _version_not_supported:
     )
 
 
-class ground_controlStub(object):
+class GroundControlStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -39,107 +34,107 @@ class ground_controlStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.get_map = channel.unary_unary(
-                '/protobufs.ground_control/get_map',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=land__array__pb2.land_array.FromString,
+        self.GetMap = channel.unary_unary(
+                '/protobufs.GroundControl/GetMap',
+                request_serializer=ground__control__pb2.Empty.SerializeToString,
+                response_deserializer=ground__control__pb2.TwoDimensionalIntArray.FromString,
                 _registered_method=True)
-        self.get_movements = channel.unary_unary(
-                '/protobufs.ground_control/get_movements',
-                request_serializer=rovers__pb2.rover_number.SerializeToString,
-                response_deserializer=rovers__pb2.rover_commands.FromString,
+        self.GetRoverMovements = channel.unary_unary(
+                '/protobufs.GroundControl/GetRoverMovements',
+                request_serializer=ground__control__pb2.RoverNumber.SerializeToString,
+                response_deserializer=ground__control__pb2.String.FromString,
                 _registered_method=True)
-        self.get_mine_serial_number = channel.unary_unary(
-                '/protobufs.ground_control/get_mine_serial_number',
-                request_serializer=rovers__pb2.rover_number.SerializeToString,
-                response_deserializer=mines__pb2.mine_serial_number.FromString,
+        self.GetMineSerialNumber = channel.unary_unary(
+                '/protobufs.GroundControl/GetMineSerialNumber',
+                request_serializer=ground__control__pb2.RoverNumber.SerializeToString,
+                response_deserializer=ground__control__pb2.String.FromString,
                 _registered_method=True)
-        self.rover_status = channel.unary_unary(
-                '/protobufs.ground_control/rover_status',
-                request_serializer=status__pb2.status.SerializeToString,
-                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+        self.RoverStatus = channel.unary_unary(
+                '/protobufs.GroundControl/RoverStatus',
+                request_serializer=ground__control__pb2.Status.SerializeToString,
+                response_deserializer=ground__control__pb2.Status.FromString,
                 _registered_method=True)
-        self.share_mine_pin = channel.unary_unary(
-                '/protobufs.ground_control/share_mine_pin',
-                request_serializer=rover__mine__pin__pb2.rover_mine_serial_pin.SerializeToString,
-                response_deserializer=status__pb2.status.FromString,
+        self.ShareMinePin = channel.unary_unary(
+                '/protobufs.GroundControl/ShareMinePin',
+                request_serializer=ground__control__pb2.RoverNumberWithMineSerialAndPin.SerializeToString,
+                response_deserializer=ground__control__pb2.Status.FromString,
                 _registered_method=True)
 
 
-class ground_controlServicer(object):
+class GroundControlServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def get_map(self, request, context):
+    def GetMap(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def get_movements(self, request, context):
+    def GetRoverMovements(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def get_mine_serial_number(self, request, context):
+    def GetMineSerialNumber(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def rover_status(self, request, context):
+    def RoverStatus(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def share_mine_pin(self, request, context):
+    def ShareMinePin(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_ground_controlServicer_to_server(servicer, server):
+def add_GroundControlServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'get_map': grpc.unary_unary_rpc_method_handler(
-                    servicer.get_map,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=land__array__pb2.land_array.SerializeToString,
+            'GetMap': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetMap,
+                    request_deserializer=ground__control__pb2.Empty.FromString,
+                    response_serializer=ground__control__pb2.TwoDimensionalIntArray.SerializeToString,
             ),
-            'get_movements': grpc.unary_unary_rpc_method_handler(
-                    servicer.get_movements,
-                    request_deserializer=rovers__pb2.rover_number.FromString,
-                    response_serializer=rovers__pb2.rover_commands.SerializeToString,
+            'GetRoverMovements': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetRoverMovements,
+                    request_deserializer=ground__control__pb2.RoverNumber.FromString,
+                    response_serializer=ground__control__pb2.String.SerializeToString,
             ),
-            'get_mine_serial_number': grpc.unary_unary_rpc_method_handler(
-                    servicer.get_mine_serial_number,
-                    request_deserializer=rovers__pb2.rover_number.FromString,
-                    response_serializer=mines__pb2.mine_serial_number.SerializeToString,
+            'GetMineSerialNumber': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetMineSerialNumber,
+                    request_deserializer=ground__control__pb2.RoverNumber.FromString,
+                    response_serializer=ground__control__pb2.String.SerializeToString,
             ),
-            'rover_status': grpc.unary_unary_rpc_method_handler(
-                    servicer.rover_status,
-                    request_deserializer=status__pb2.status.FromString,
-                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            'RoverStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.RoverStatus,
+                    request_deserializer=ground__control__pb2.Status.FromString,
+                    response_serializer=ground__control__pb2.Status.SerializeToString,
             ),
-            'share_mine_pin': grpc.unary_unary_rpc_method_handler(
-                    servicer.share_mine_pin,
-                    request_deserializer=rover__mine__pin__pb2.rover_mine_serial_pin.FromString,
-                    response_serializer=status__pb2.status.SerializeToString,
+            'ShareMinePin': grpc.unary_unary_rpc_method_handler(
+                    servicer.ShareMinePin,
+                    request_deserializer=ground__control__pb2.RoverNumberWithMineSerialAndPin.FromString,
+                    response_serializer=ground__control__pb2.Status.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'protobufs.ground_control', rpc_method_handlers)
+            'protobufs.GroundControl', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('protobufs.ground_control', rpc_method_handlers)
+    server.add_registered_method_handlers('protobufs.GroundControl', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class ground_control(object):
+class GroundControl(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def get_map(request,
+    def GetMap(request,
             target,
             options=(),
             channel_credentials=None,
@@ -152,9 +147,9 @@ class ground_control(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/protobufs.ground_control/get_map',
-            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            land__array__pb2.land_array.FromString,
+            '/protobufs.GroundControl/GetMap',
+            ground__control__pb2.Empty.SerializeToString,
+            ground__control__pb2.TwoDimensionalIntArray.FromString,
             options,
             channel_credentials,
             insecure,
@@ -166,7 +161,7 @@ class ground_control(object):
             _registered_method=True)
 
     @staticmethod
-    def get_movements(request,
+    def GetRoverMovements(request,
             target,
             options=(),
             channel_credentials=None,
@@ -179,9 +174,9 @@ class ground_control(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/protobufs.ground_control/get_movements',
-            rovers__pb2.rover_number.SerializeToString,
-            rovers__pb2.rover_commands.FromString,
+            '/protobufs.GroundControl/GetRoverMovements',
+            ground__control__pb2.RoverNumber.SerializeToString,
+            ground__control__pb2.String.FromString,
             options,
             channel_credentials,
             insecure,
@@ -193,7 +188,7 @@ class ground_control(object):
             _registered_method=True)
 
     @staticmethod
-    def get_mine_serial_number(request,
+    def GetMineSerialNumber(request,
             target,
             options=(),
             channel_credentials=None,
@@ -206,9 +201,9 @@ class ground_control(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/protobufs.ground_control/get_mine_serial_number',
-            rovers__pb2.rover_number.SerializeToString,
-            mines__pb2.mine_serial_number.FromString,
+            '/protobufs.GroundControl/GetMineSerialNumber',
+            ground__control__pb2.RoverNumber.SerializeToString,
+            ground__control__pb2.String.FromString,
             options,
             channel_credentials,
             insecure,
@@ -220,7 +215,7 @@ class ground_control(object):
             _registered_method=True)
 
     @staticmethod
-    def rover_status(request,
+    def RoverStatus(request,
             target,
             options=(),
             channel_credentials=None,
@@ -233,9 +228,9 @@ class ground_control(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/protobufs.ground_control/rover_status',
-            status__pb2.status.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            '/protobufs.GroundControl/RoverStatus',
+            ground__control__pb2.Status.SerializeToString,
+            ground__control__pb2.Status.FromString,
             options,
             channel_credentials,
             insecure,
@@ -247,7 +242,7 @@ class ground_control(object):
             _registered_method=True)
 
     @staticmethod
-    def share_mine_pin(request,
+    def ShareMinePin(request,
             target,
             options=(),
             channel_credentials=None,
@@ -260,9 +255,9 @@ class ground_control(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/protobufs.ground_control/share_mine_pin',
-            rover__mine__pin__pb2.rover_mine_serial_pin.SerializeToString,
-            status__pb2.status.FromString,
+            '/protobufs.GroundControl/ShareMinePin',
+            ground__control__pb2.RoverNumberWithMineSerialAndPin.SerializeToString,
+            ground__control__pb2.Status.FromString,
             options,
             channel_credentials,
             insecure,

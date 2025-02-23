@@ -1,21 +1,41 @@
 syntax = "proto3";
 package protobufs;
 
-import "google/protobuf/empty.proto";
-import "land_array.proto";
-import "rovers.proto";
-import "mines.proto";
-import "rover_mine_pin.proto";
-import "status.proto";
-
-service ground_control {
-  rpc get_map(google.protobuf.Empty) returns (land_array);
-
-  rpc get_movements(rover_number) returns (rover_commands);
-
-  rpc get_mine_serial_number(rover_number) returns (mine_serial_number);
-
-  rpc rover_status(status) returns (google.protobuf.Empty);
-
-  rpc share_mine_pin(rover_mine_serial_pin) returns (status);
+service GroundControl {
+  rpc GetMap(Empty) returns (TwoDimensionalIntArray);
+  rpc GetRoverMovements(RoverNumber) returns (String);
+  rpc GetMineSerialNumber(RoverNumber) returns (String);
+  rpc RoverStatus(Status) returns (Status);
+  rpc ShareMinePin(RoverNumberWithMineSerialAndPin) returns (Status);
 }
+
+message Empty{}
+
+message IntArray{
+  repeated int32 values = 1;
+}
+
+message TwoDimensionalIntArray{
+  repeated IntArray rows = 1;
+}
+
+message RoverNumber{
+  int32 number = 1;
+}
+
+message String{
+  string value = 1;
+}
+
+message Status{
+  int32 statusCode = 1;
+  string message = 2;
+}
+
+message RoverNumberWithMineSerialAndPin{
+  int32 roverNumber = 1;
+  string mineSerialNumber = 2;
+  string minePin = 3;
+}
+
+
