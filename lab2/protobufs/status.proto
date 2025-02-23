@@ -1,0 +1,7 @@
+syntax = "proto3";
+package protobufs;
+
+message status {
+  int32 status_code = 1;
+  string message = 2;
+}

@@ -6,6 +6,7 @@ message rover_number{
 }
 
 message rover_commands{
-  string commands = 2;
+  string commands = 1;
 }
+
 
