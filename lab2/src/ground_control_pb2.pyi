@@ -16,10 +16,10 @@ class IntArray(_message.Message):
     def __init__(self, values: _Optional[_Iterable[int]] = ...) -> None: ...
 
 class TwoDimensionalIntArray(_message.Message):
-    __slots__ = ("rows",)
-    ROWS_FIELD_NUMBER: _ClassVar[int]
-    rows: _containers.RepeatedCompositeFieldContainer[IntArray]
-    def __init__(self, rows: _Optional[_Iterable[_Union[IntArray, _Mapping]]] = ...) -> None: ...
+    __slots__ = ("row",)
+    ROW_FIELD_NUMBER: _ClassVar[int]
+    row: _containers.RepeatedCompositeFieldContainer[IntArray]
+    def __init__(self, row: _Optional[_Iterable[_Union[IntArray, _Mapping]]] = ...) -> None: ...
 
 class RoverNumber(_message.Message):
     __slots__ = ("number",)

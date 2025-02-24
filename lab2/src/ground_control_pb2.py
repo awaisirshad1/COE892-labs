@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14ground_control.proto\x12\tprotobufs\"\x07\n\x05\x45mpty\"\x1a\n\x08IntArray\x12\x0e\n\x06values\x18\x01 \x03(\x05\";\n\x16TwoDimensionalIntArray\x12!\n\x04rows\x18\x01 \x03(\x0b\x32\x13.protobufs.IntArray\"\x1d\n\x0bRoverNumber\x12\x0e\n\x06number\x18\x01 \x01(\x05\"\x17\n\x06String\x12\r\n\x05value\x18\x01 \x01(\t\"-\n\x06Status\x12\x12\n\nstatusCode\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\"a\n\x1fRoverNumberWithMineSerialAndPin\x12\x13\n\x0broverNumber\x18\x01 \x01(\x05\x12\x18\n\x10mineSerialNumber\x18\x02 \x01(\t\x12\x0f\n\x07minePin\x18\x03 \x01(\t2\xd4\x02\n\rGroundControl\x12=\n\x06GetMap\x12\x10.protobufs.Empty\x1a!.protobufs.TwoDimensionalIntArray\x12>\n\x11GetRoverMovements\x12\x16.protobufs.RoverNumber\x1a\x11.protobufs.String\x12@\n\x13GetMineSerialNumber\x12\x16.protobufs.RoverNumber\x1a\x11.protobufs.String\x12\x33\n\x0bRoverStatus\x12\x11.protobufs.Status\x1a\x11.protobufs.Status\x12M\n\x0cShareMinePin\x12*.protobufs.RoverNumberWithMineSerialAndPin\x1a\x11.protobufs.Statusb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14ground_control.proto\x12\tprotobufs\"\x07\n\x05\x45mpty\"\x1a\n\x08IntArray\x12\x0e\n\x06values\x18\x01 \x03(\x05\":\n\x16TwoDimensionalIntArray\x12 \n\x03row\x18\x01 \x03(\x0b\x32\x13.protobufs.IntArray\"\x1d\n\x0bRoverNumber\x12\x0e\n\x06number\x18\x01 \x01(\x05\"\x17\n\x06String\x12\r\n\x05value\x18\x01 \x01(\t\"-\n\x06Status\x12\x12\n\nstatusCode\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\"a\n\x1fRoverNumberWithMineSerialAndPin\x12\x13\n\x0broverNumber\x18\x01 \x01(\x05\x12\x18\n\x10mineSerialNumber\x18\x02 \x01(\t\x12\x0f\n\x07minePin\x18\x03 \x01(\t2\xd4\x02\n\rGroundControl\x12=\n\x06GetMap\x12\x10.protobufs.Empty\x1a!.protobufs.TwoDimensionalIntArray\x12>\n\x11GetRoverMovements\x12\x16.protobufs.RoverNumber\x1a\x11.protobufs.String\x12@\n\x13GetMineSerialNumber\x12\x16.protobufs.RoverNumber\x1a\x11.protobufs.String\x12\x33\n\x0bRoverStatus\x12\x11.protobufs.Status\x1a\x11.protobufs.Status\x12M\n\x0cShareMinePin\x12*.protobufs.RoverNumberWithMineSerialAndPin\x1a\x11.protobufs.Statusb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,15 +36,15 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_INTARRAY']._serialized_start=44
   _globals['_INTARRAY']._serialized_end=70
   _globals['_TWODIMENSIONALINTARRAY']._serialized_start=72
-  _globals['_TWODIMENSIONALINTARRAY']._serialized_end=131
-  _globals['_ROVERNUMBER']._serialized_start=133
-  _globals['_ROVERNUMBER']._serialized_end=162
-  _globals['_STRING']._serialized_start=164
-  _globals['_STRING']._serialized_end=187
-  _globals['_STATUS']._serialized_start=189
-  _globals['_STATUS']._serialized_end=234
-  _globals['_ROVERNUMBERWITHMINESERIALANDPIN']._serialized_start=236
-  _globals['_ROVERNUMBERWITHMINESERIALANDPIN']._serialized_end=333
-  _globals['_GROUNDCONTROL']._serialized_start=336
-  _globals['_GROUNDCONTROL']._serialized_end=676
+  _globals['_TWODIMENSIONALINTARRAY']._serialized_end=130
+  _globals['_ROVERNUMBER']._serialized_start=132
+  _globals['_ROVERNUMBER']._serialized_end=161
+  _globals['_STRING']._serialized_start=163
+  _globals['_STRING']._serialized_end=186
+  _globals['_STATUS']._serialized_start=188
+  _globals['_STATUS']._serialized_end=233
+  _globals['_ROVERNUMBERWITHMINESERIALANDPIN']._serialized_start=235
+  _globals['_ROVERNUMBERWITHMINESERIALANDPIN']._serialized_end=332
+  _globals['_GROUNDCONTROL']._serialized_start=335
+  _globals['_GROUNDCONTROL']._serialized_end=675
 # @@protoc_insertion_point(module_scope)

@@ -16,7 +16,7 @@ message IntArray{
 }
 
 message TwoDimensionalIntArray{
-  repeated IntArray rows = 1;
+  repeated IntArray row = 1;
 }
 
 message RoverNumber{
