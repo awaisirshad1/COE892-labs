@@ -1,0 +1,41 @@
+syntax = "proto3";
+package protobufs;
+
+service GroundControl {
+  rpc GetMap(Empty) returns (TwoDimensionalIntArray);
+  rpc GetRoverMovements(RoverNumber) returns (String);
+  rpc GetMineSerialNumber(RoverNumber) returns (String);
+//  rpc RoverStatus(Status) returns (Status);
+//  rpc ShareMinePin(RoverNumberWithMineSerialAndPin) returns (Status);
+}
+
+message Empty{}
+
+message IntArray{
+  repeated int32 values = 1;
+}
+
+message TwoDimensionalIntArray{
+  repeated IntArray row = 1;
+}
+
+message RoverNumber{
+  int32 number = 1;
+}
+
+message String{
+  string value = 1;
+}
+
+message Status{
+  int32 statusCode = 1;
+  string message = 2;
+}
+
+message RoverNumberWithMineSerialAndPin{
+  int32 roverNumber = 1;
+  string mineSerialNumber = 2;
+  string minePin = 3;
+}
+
+
