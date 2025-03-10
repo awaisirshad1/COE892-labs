@@ -1,6 +1,4 @@
 import grpc
-import pika
-
 import ground_control_pb2
 import ground_control_pb2_grpc
 import rover_utils as rvr
@@ -14,7 +12,7 @@ def deserialize_map_into_array(response: ground_control_pb2.TwoDimensionalIntArr
     return arr
 
 
-def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: ground_control_pb2_grpc.GroundControlStub, rabbit_channel: pika.channel.BlockingChannel, demine_queue: str):
+def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: ground_control_pb2_grpc.GroundControlStub):
     # deep copy the map_txt so that the original is never modified:
     map_copy = copy.deepcopy(map_txt)
     mines = []
@@ -26,6 +24,7 @@ def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: groun
     num_columns = len(map_copy[0])
     right_boundary = num_columns - 1
     lower_boundary = num_rows - 1
+    autodig = True
     mine_counter = 0
     # the result will be stored in this array
     result = [[None for j in range(num_columns)] for k in range(num_rows)]
@@ -57,23 +56,40 @@ def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: groun
                             current_direction == 1 and current_position[1] != right_boundary) or (
                             current_direction == 3 and current_position[1] != 0):
                         # print(f'current_position:{current_position}')
-                        # if we are on a mine, publish the encountered mine to demine-queue and continue moving
+                        # if we are on a mine, fetch serial number from server, compute pin and disarm
                         if map_copy[current_position[0]][current_position[1]] == 1:
                             print(f'encountered mine at [{current_position[0]},{current_position[1]}], fetching serial number then computing pin...' )
                             serial_num = get_mine_serial_number_from_server(rover_num, stub)
                             if serial_num not in mines:
                                 mines.append(serial_num)
-                            publish_mine_to_demine_queue(rabbit_channel, rover_num, current_position, mine_counter, serial_num, demine_queue)
-                        # move forward
-                        current_position = [current_position[idx] + change_in_position.get(directions[current_direction])[idx] for idx in range(2)]
+                            valid_pins.append(rvr.compute_pin_for_given_mine_sequential(mines[mine_counter-1]))
+                            print(f'found valid pin, now notifying server of the valid pin for this serial number')
+                            # now inform the server of the valid pin
+                            response = stub.ShareMinePin(ground_control_pb2.RoverNumberWithMineSerialAndPin(roverNumber=rover_num, mineSerialNumber=mines[mine_counter-1], minePin=valid_pins[-1]))
+                            print(f'server response:{response}')
+                            map_copy[current_position[0]][current_position[1]] = 0
+                        # otherwise, move forward
+                        else:
+                            result[current_position[0]][current_position[1]] = '*'
+                            current_position = [current_position[idx] + change_in_position.get(directions[current_direction])[idx] for idx in range(2)]
                 # if we aren't changing directions or moving forward, only possible instruction is to dig
                 elif rover_moves[i] == 'D':
-                    print('D command encountered, auto dig enabled, ignoring dig command...')
-                    # do nothing
+                    # are we on a mine? if yes we compute the pin for part 2
+                    if map_copy[current_position[0]][current_position[1]] == 1:
+                        map_copy[current_position[0]][current_position[1]] = 0
+                #       otherwise, do nothing
                 # no conditions met, therefore input error
                 else:
                     raise Exception('Invalid string input for rover moves: contains invalid character that is not L,'
                                     'R,M,D')
+        # now fill in the rest of the map where the rover did not traverse
+        # their values in the 'result' array will be None, so only replace values equal to None
+        result = [[str(map_copy[x][y]) if result[x][y] is None else str(result[x][y]) for y in range(num_columns)] for x in range(num_rows)]
+        # make a dictionary for each mine and its respective valid pin
+        mines_and_their_valid_pins = dict(zip(mines, valid_pins))
+        # print(f'map_txt:{map_txt}')
+        # print(f'map_copy:{map_copy}')
+        return result, mines_and_their_valid_pins
     except ValueError:
         print(f'error:{ValueError}')
 
@@ -90,53 +106,32 @@ def share_mine_pin_with_server(rover_number: int, serial_number: str, pin: str, 
     return
 
 
-def publish_mine_to_demine_queue(channel: pika.channel.BlockingChannel, rover_number: int, coordinates: list, mine_id: int, serial_number: str, demine_queue: str):
-    message = f'CLIENT: rover_number={rover_number} encountered mine_id={mine_id},serial_number={serial_number},coordinates:{coordinates}'
-    channel.basic_publish(
-        exchange='',routing_key=demine_queue,body=message,properties={pika.BasicProperties(delivery_mode=2)}
-    )
-
-
 def run():
-    ran_rovers = []
-    while(str(input)!= 'exit'):
-        with grpc.insecure_channel('localhost:50051', options=(('grpc.enable_http_proxy', 0),)) as channel:
-            # grpc stub
-            stub = ground_control_pb2_grpc.GroundControlStub(channel)
-            # rabbitmq publisher setup
-            connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-            rabbit_channel = connection.channel()
-            demine_queue = 'demine_queue'
-            rabbit_channel.queue_declare(queue=demine_queue, durable=True)
-            print('Enter the rover number:')
-            rover_number = int(input())
-            # validate rover number is from 1-10
-            if rover_number not in range(1, 11):
-                print('Invalid rover number')
-                exit(1)
-            if rover_number in run_rovers:
-                print(f'Already computed path for rover number {rover_number}')
-                continue
-            # get the map
-            response = stub.GetMap(ground_control_pb2.Empty())
-            # extract it into an array and print
-            rover_land_array = deserialize_map_into_array(response)
-            print(f'rover_land_array:{rover_land_array}')
-            # now get the movements for the given rover
-            rover_movements = stub.GetRoverMovements(ground_control_pb2.RoverNumber(number=rover_number))
-            print(f'rover_movements:{rover_movements}')
-            # now start processing the rover's moves
-            draw_rover_path(rover_number, rover_movements.value, rover_land_array, stub, rabbit_channel, demine_queue)
-            uinput = input('rover path computed, enter \'exit\' if you wish to exit, otherwise press enter: ')
-            if(uinput.lower()=='exit'):
-                print('Goodbye!')
-                break
-            else:
-                continue
+    with grpc.insecure_channel('localhost:50051',options=(('grpc.enable_http_proxy', 0),)) as channel:
+        stub = ground_control_pb2_grpc.GroundControlStub(channel)
+        print('Enter the rover number:')
+        rover_number = int(input())
+        # validate rover number is from 1-10
+        if rover_number not in range(1,11):
+            print('Invalid rover number')
+            exit(1)
+        # get the map
+        response = stub.GetMap(ground_control_pb2.Empty())
+        # extract it into an array and print
+        rover_land_array = deserialize_map_into_array(response)
+        print(f'rover_land_array:{rover_land_array}')
+        # now get the movements for the given rover
+        rover_movements = stub.GetRoverMovements(ground_control_pb2.RoverNumber(number=rover_number))
+        print(f'rover_movements:{rover_movements}')
+        # now start processing the rover's moves
+        result, valid_pins = draw_rover_path(rover_number, rover_movements.value, rover_land_array, stub)
+        print(f'result:{result},valid_pins:{valid_pins}')
+        # now share the status with the server:
+        rover_status = "failure" if all('X' in subs for subs in result) else "success"
+        status_code = 1 if rover_status == "failure" else 0
+        response = stub.RoverStatus(ground_control_pb2.Status(statusCode=status_code, message=rover_status))
+        print(f'response from server:{response}')
 
-
-    # closing connection to rabbit server
-    connection.close()
 
 if __name__ == '__main__':
     run()
