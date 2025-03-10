@@ -79,4 +79,5 @@ def rabbitmq_defused_mines_consumer():
 
 if __name__ == '__main__':
     rabbitmq_thread = threading.Thread(target=rabbitmq_defused_mines_consumer)
+    rabbitmq_thread.start()
     serve()
