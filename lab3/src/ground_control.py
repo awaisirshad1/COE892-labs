@@ -6,6 +6,7 @@ import grpc
 import pika
 import rover_utils as rvr
 
+
 class GroundControlServicer(ground_control_pb2_grpc.GroundControlServicer):
     def GetMap(self, request, context):
         print(f'received request to get map: {request}')
