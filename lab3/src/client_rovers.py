@@ -14,7 +14,7 @@ def deserialize_map_into_array(response: ground_control_pb2.TwoDimensionalIntArr
     return arr
 
 
-def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: ground_control_pb2_grpc.GroundControlStub, rabbit_channel: pika.channel.BlockingChannel, demine_queue: str):
+def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: ground_control_pb2_grpc.GroundControlStub, rabbit_channel, demine_queue: str, exchange_name: str, routing_key: str):
     # deep copy the map_txt so that the original is never modified:
     map_copy = copy.deepcopy(map_txt)
     mines = []
@@ -60,10 +60,11 @@ def draw_rover_path(rover_num: int, rover_moves: str, map_txt: list, stub: groun
                         # if we are on a mine, publish the encountered mine to demine-queue and continue moving
                         if map_copy[current_position[0]][current_position[1]] == 1:
                             print(f'encountered mine at [{current_position[0]},{current_position[1]}], fetching serial number then computing pin...' )
+                            map_copy[current_position[0]][current_position[1]] = 0
                             serial_num = get_mine_serial_number_from_server(rover_num, stub)
                             if serial_num not in mines:
                                 mines.append(serial_num)
-                            publish_mine_to_demine_queue(rabbit_channel, rover_num, current_position, mine_counter, serial_num, demine_queue)
+                            publish_mine_to_demine_queue(rabbit_channel, rover_num, current_position, mine_counter, serial_num, demine_queue, exchange_name, routing_key)
                         # move forward
                         current_position = [current_position[idx] + change_in_position.get(directions[current_direction])[idx] for idx in range(2)]
                 # if we aren't changing directions or moving forward, only possible instruction is to dig
@@ -84,30 +85,32 @@ def get_mine_serial_number_from_server(rover_number: int, stub: ground_control_p
     return response.value
 
 
-def share_mine_pin_with_server(rover_number: int, serial_number: str, pin: str,  stub: ground_control_pb2_grpc.GroundControlStub):
-    response = stub.ShareMinePin(ground_control_pb2.RoverNumberWithMineSerialAndPin(rover_number=rover_number, mineSerialNumber=serial_number, minePin=pin))
-    print(f'server response after sharing pin: {response}')
-    return
+def publish_mine_to_demine_queue(channel, rover_number: int, coordinates: list, mine_id: int, serial_number: str, demine_queue: str, exchange_name: str, routing_key: str):
+    message = f'CLIENT: rover_number={rover_number},encountered_mine_id={mine_id},serial_number={serial_number},coordinates={coordinates}'
+    channel.basic_publish(exchange=exchange_name, routing_key=routing_key, body=message)
 
-
-def publish_mine_to_demine_queue(channel: pika.channel.BlockingChannel, rover_number: int, coordinates: list, mine_id: int, serial_number: str, demine_queue: str):
-    message = f'CLIENT: rover_number={rover_number} encountered mine_id={mine_id},serial_number={serial_number},coordinates:{coordinates}'
-    channel.basic_publish(
-        exchange='',routing_key=demine_queue,body=message,properties={pika.BasicProperties(delivery_mode=2)}
-    )
 
 
 def run():
     ran_rovers = []
-    while(str(input)!= 'exit'):
-        with grpc.insecure_channel('localhost:50051', options=(('grpc.enable_http_proxy', 0),)) as channel:
+    with grpc.insecure_channel('localhost:50051', options=(('grpc.enable_http_proxy', 0),)) as channel:
+        while(True):
             # grpc stub
             stub = ground_control_pb2_grpc.GroundControlStub(channel)
             # rabbitmq publisher setup
             connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
             rabbit_channel = connection.channel()
             demine_queue = 'demine_queue'
+            exchange_name = 'lab3'
+            routing_key = 'demine_info'
+            rabbit_channel.exchange_declare(
+                exchange=exchange_name,
+                exchange_type='direct',
+                durable=True,
+                auto_delete=False
+            )
             rabbit_channel.queue_declare(queue=demine_queue, durable=True)
+            rabbit_channel.queue_bind(exchange=exchange_name,queue=demine_queue, routing_key=routing_key)
             print('Enter the rover number:')
             rover_number = int(input())
             # validate rover number is from 1-10
@@ -126,13 +129,16 @@ def run():
             rover_movements = stub.GetRoverMovements(ground_control_pb2.RoverNumber(number=rover_number))
             print(f'rover_movements:{rover_movements}')
             # now start processing the rover's moves
-            draw_rover_path(rover_number, rover_movements.value, rover_land_array, stub, rabbit_channel, demine_queue)
+            draw_rover_path(rover_number, rover_movements.value, rover_land_array, stub, rabbit_channel, demine_queue, exchange_name, routing_key)
             uinput = input('rover path computed, enter \'exit\' if you wish to exit, otherwise press enter: ')
             if(uinput.lower()=='exit'):
+                rabbit_channel.close()
+                connection.close()
                 print('Goodbye!')
                 break
             else:
                 continue
+
 
 
 if __name__ == '__main__':
