@@ -6,6 +6,7 @@ import string
 import random
 import threading
 from mine import Mine
+from rover import Rover
 
 
 found_event = threading.Event()
@@ -88,6 +89,12 @@ def extract_rover_moves(url: str, num: int):
         # print(json_data['data']['moves'])
         return json_data['data']['moves']
 
+
+def extract_all_rovers_moves_to_map_with_ids(url: str, num_rovers: int):
+    rovers = {}
+    for i in range(num_rovers):
+          rovers[i+1] = Rover(i+1, extract_rover_moves(url, i+1))
+    return rovers
 
 # API to extract mines.txt
 def extract_mines_to_array(path_to_mines: str):
@@ -310,7 +317,7 @@ def print_path_to_file(path: str, i: int, path_array: list):
             file.write('\n')
 
 
-def create_map_copy(path: str):
+def create_txt_file(path: str):
     with open(path, "w") as file:
         pass
 
