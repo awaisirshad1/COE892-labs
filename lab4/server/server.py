@@ -1,12 +1,13 @@
+import threading
 from fastapi import FastAPI, status, HTTPException
 from fastapi.responses import JSONResponse
 from typing import Optional
 from pydantic import BaseModel
 import rover_utils as rvr
 import os
-import copy
 from mine import Mine
-from rover import Rover
+from rover import Rover, RoverStatus
+from typing import Dict, Tuple
 
 
 class ExpansionRequest(BaseModel):
@@ -27,6 +28,10 @@ class MineUpdate(BaseModel):
 
 
 class RoverCreationRequest(BaseModel):
+    command_string: str
+
+
+class RoverUpdateRequest(BaseModel):
     command_string: str
 
 
@@ -52,6 +57,8 @@ mine_serial_numbers = rvr.extract_mines_to_array(mines_path)
 mines = rvr.assign_mines(map_array, mine_serial_numbers)
 
 rovers = rvr.extract_all_rovers_moves_to_map_with_ids(rover_path_url, 10)
+# dictionary containing a mapping of rover id to a tuple containing the rover's thread and lock
+rover_threads: Dict[int, Tuple[threading.Lock, threading.Thread]] = {}
 next_rover_id = 11
 
 
@@ -249,14 +256,11 @@ def create_rover(request: RoverCreationRequest):
     if request.command_string == "":
         return JSONResponse(content={"error": "rover moves can't be empty"},
                             status_code=status.HTTP_400_BAD_REQUEST)
-    allowed_chars = set("MDLRmdlr")
-    rover_moves = None
-    if all(c in allowed_chars for c in request.command_string):
-        rover_moves = request.command_string.upper()
-    else:
+    if not rvr.validate_command_string(request.command_string):
         return JSONResponse(content={"error": "The rover's movement contains invalid characters. "
                                               "Only M, D, L, R are allowed."},
                             status_code=status.HTTP_400_BAD_REQUEST)
+    rover_moves = request.command_string.upper()
     rover = Rover(next_rover_id, rover_moves)
     rovers[rover.rover_id] = rover
     next_rover_id += 1
@@ -264,6 +268,7 @@ def create_rover(request: RoverCreationRequest):
                         status_code=status.HTTP_200_OK)
 
 
+# NOTE: This delete API can terminate the thread by setting the event
 @app.delete("/rovers/{rover_id}")
 def delete_rover_by_id(rover_id: int) -> JSONResponse:
     try:
@@ -271,6 +276,13 @@ def delete_rover_by_id(rover_id: int) -> JSONResponse:
             return JSONResponse(content={"error": "please enter an existing ID"},
                                 status_code=status.HTTP_400_BAD_REQUEST)
         rover = rovers.pop(rover_id)
+        if rover.rover_id in rover_threads.keys():
+            print("Rover thread is currently executing, signalling it to terminate...")
+            rover_lock, rover_thread = rover_threads[rover_id]
+            with rover_lock:
+                rover.terminate_rover_thread()
+            print("terminated thread, deleting from pool...")
+            rover_threads.pop(rover.rover_id)
         return JSONResponse(content={"deleted rover": str(rover)},
                             status_code=status.HTTP_200_OK)
     except ValueError:
@@ -281,5 +293,73 @@ def delete_rover_by_id(rover_id: int) -> JSONResponse:
                             status_code=status.HTTP_400_BAD_REQUEST)
 
 
-# @app.put("/rovers/{rover_id}")
-# def update_rover_by_id(request: )
+@app.put("/rovers/{rover_id}")
+def add_commands_to_rover(rover_id: int, request: RoverUpdateRequest):
+    try:
+        if rover_id == 0:
+            return JSONResponse(content={"error": "rover IDs only take on values of 1 or greater."},
+                                status_code=status.HTTP_400_BAD_REQUEST)
+        if not rvr.validate_command_string(request.command_string):
+            return JSONResponse(content={"error": "The rover's movement contains invalid characters. "
+                                                  "Only M, D, L, R are allowed."},
+                                status_code=status.HTTP_400_BAD_REQUEST)
+        if rover_id not in rovers.keys():
+            return JSONResponse(content={"error": "please enter an existing ID"},
+                                status_code=status.HTTP_400_BAD_REQUEST)
+        rover_executing = rover_id in rover_threads.keys()
+        rover_lock: Optional[threading.Lock]
+        rover_thread: Optional[threading.Thread]
+        rover_lock, rover_thread = rover_threads.get(rover_id)
+        # if it is executing, wait to acquire the lock
+        if rover_executing:
+            rover_lock.acquire()
+        rover = rovers[rover_id]
+        if rover.status == RoverStatus.ELIMINATED or rover.status == RoverStatus.MOVING:
+            if rover_executing:
+                rover_lock.release()
+            return JSONResponse(content={"error": "cannot send rover commands while status is MOVING or ELIMINATED"},
+                                status_code=status.HTTP_409_CONFLICT)
+        rover.update_command_string(request.command_string.upper())
+        if rover_executing:
+            rover_lock.release()
+        return JSONResponse(content={"rover": rover.extended_str()},
+                            status_code=status.HTTP_200_OK)
+    except ValueError:
+        return JSONResponse(content={"error": "please enter a numerical ID"},
+                            status_code=status.HTTP_400_BAD_REQUEST)
+    except KeyError:
+        return JSONResponse(content={"error": "please enter an existing ID"},
+                            status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@app.post("/rovers/{rover_id}/dispatch")
+def dispatch_rover(rover_id: int):
+    try:
+        if rover_id not in rovers.keys():
+            return JSONResponse(content={"error": "please enter an existing ID"},
+                                status_code=status.HTTP_400_BAD_REQUEST)
+        if rover_id == 0:
+            return JSONResponse(content={"error": "rover IDs only take on values of 1 or greater."},
+                                status_code=status.HTTP_400_BAD_REQUEST)
+        rover = rovers[rover_id]
+        # if it is already executing or done:
+        if rover.rover_id in rover_threads:
+            rover_lock, rover_thread = rover_threads[rover_id]
+            with rover_lock:
+                return JSONResponse(content={"status": rover.extended_str()},
+                                    status_code=status.HTTP_200_OK)
+        # if it is not already executing or done
+        # TODO: Write code to start execution of rover, create lock and thread
+        rvr_lock = threading.Lock()
+        rvr_thread = threading.Thread(target=rvr.rover_executor, args=(rover, rvr_lock))
+        rover_threads[rover.rover_id] = (rvr_lock, rvr_thread)
+        rvr_thread.start()
+        with rvr_lock:
+            return JSONResponse(content={"rover": rover.extended_str()},
+                                status_code=status.HTTP_200_OK)
+    except ValueError:
+        return JSONResponse(content={"error": "please enter a numerical ID"},
+                            status_code=status.HTTP_400_BAD_REQUEST)
+    except KeyError:
+        return JSONResponse(content={"error": "please enter an existing ID"},
+                            status_code=status.HTTP_400_BAD_REQUEST)

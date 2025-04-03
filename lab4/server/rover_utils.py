@@ -5,6 +5,7 @@ import hashlib
 import string
 import random
 import threading
+import time
 from mine import Mine
 from rover import Rover
 
@@ -380,4 +381,28 @@ def update_mines(serial_nums, txt_file_path):
         file.write("")
         for serial_num in serial_nums:
             file.write(f"{serial_num}\n")
+
+
+def validate_command_string(command_string: str):
+    allowed_chars = set("MDLRmdlr")
+    if all(c in allowed_chars for c in command_string):
+        return True
+    return False
+
+
+# an executor that can be called from inside a thread, waits for the lock and
+# sleeps periodically to allow for main thread to read rover's state
+def rover_executor(rover: Rover, rover_lock: threading.Lock) -> None:
+    while not rover.terminate_rover_event.is_set():
+        with rover_lock:
+            # let the rover traverse the map and execute commands
+            print("")
+        # sleep a bit to allow the main thread to check the status or to terminate
+        time.sleep(1)
+        # if rover.terminate_rover_event.is_set():
+        #     print("terminating rover thread...")
+        #     return
+    print("terminating rover thread...")
+    return
+
 
