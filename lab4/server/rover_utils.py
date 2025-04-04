@@ -6,8 +6,10 @@ import string
 import random
 import threading
 import time
+import typing
+from typing import Optional
 from mine import Mine
-from rover import Rover
+from rover import Rover, RoverStatus
 
 
 found_event = threading.Event()
@@ -81,6 +83,8 @@ DRAWING THE path_i.txt FILE
     the resulting array to. 
 '''
 
+change_in_position = {'N': (-1, 0), 'S': (1, 0), 'E': (0, 1), 'W': (0, -1)}
+directions = ['S', 'E', 'N', 'W']
 
 # API to extract rover moves based on number
 def extract_rover_moves(url: str, num: int):
@@ -96,6 +100,7 @@ def extract_all_rovers_moves_to_map_with_ids(url: str, num_rovers: int):
     for i in range(num_rovers):
           rovers[i+1] = Rover(i+1, extract_rover_moves(url, i+1))
     return rovers
+
 
 # API to extract mines.txt
 def extract_mines_to_array(path_to_mines: str):
@@ -308,6 +313,83 @@ def draw_rover_path_part2(rover_moves: str, map_txt: list, parallel: bool, ):
         print(f'error:{ValueError}')
 
 
+# API to execute a single rover move at a time
+# return true if rover is still alive, return false if not
+def execute_next_command(rover: Rover, map_array: list, mines: dict) -> bool:
+    if rover.status == RoverStatus.ELIMINATED:
+        return False
+    if rover.status == RoverStatus.FINISHED:
+        return True
+    if rover.remaining_commands == "":
+        rover.status = RoverStatus.FINISHED
+        return True
+    print("executing next command...")
+    # set up the boundaries for map:
+    right_boundary = len(map_array[0]) - 1
+    lower_boundary = len(map_array) - 1
+    # get current move, store it for now
+    current_move = rover.remaining_commands[0]
+    # if turning right
+    if current_move == "R":
+        rover.current_direction = (rover.current_direction + 3) % 4
+    # if turning left
+    elif current_move == "L":
+        rover.current_direction = (rover.current_direction + 5) % 4
+    # if we are moving forward
+    elif current_move == "M":
+        # if we are not at a border
+        # if we are facing south (0) and not at the lower boundary OR
+        # if we are facing north (2) and not at the upper boundary OR
+        # if we are facing east (1) and not at the right boundary OR
+        # if we are facing west (3) and not at the left boundary
+        # THEN we may move forward depending on if we are on a mine
+        if (rover.current_direction == 0 and rover.current_x != lower_boundary) or (
+                rover.current_direction == 2 and rover.current_x[0] != 0) or (
+                rover.current_direction == 1 and rover.current_y != right_boundary) or (
+                rover.current_direction == 3 and rover.current_y != 0):
+            # if we attempt to move off a mine
+            if map_array[rover.current_x][rover.current_y] == 1:
+                current_mine: Optional[Mine] = None
+                for mine in mines:
+                    if mine.x == rover.current_x and mine.y == rover.current_y:
+                        current_mine = mine
+                        break
+                # if we haven't disarmed it
+                if not current_mine.serial_num in rover.mines_defused.keys():
+                    rover.status = RoverStatus.ELIMINATED
+                    print("rover has been blown up")
+                    return False
+            # if we have, move forward
+            position_change = change_in_position.get(directions[rover.current_direction])
+            rover.current_x += position_change[0]
+            rover.current_y += position_change[1]
+        # if current command is dig
+    elif current_move == "D":
+        # if we are on a mine, dig, disarm, otherwise, do nothing
+        if map_array[rover.current_x][rover.current_y] == 1:
+            coords = [rover.current_x, rover.current_y]
+            mine: Optional[Mine] = None
+            idx = -1
+            for i in range(len(mines)):
+                if mines[i].x == rover.current_x and mines[i].y == rover.current_y:
+                    mine = mines[i]
+                    idx = i
+                    break
+            mine.computed_pin = compute_pin_for_given_mine_sequential(mine.serial_num)
+            rover.mines_defused[mine.serial_num] = mine
+            if idx != -1:
+                mines[idx] = mine
+    else:
+        print("invalid character in moves")
+    # after we've tested the current character
+    rover.remaining_commands = rover.remaining_commands[1:]
+    rover.executed_commands += current_move
+    if rover.remaining_commands == "":
+        rover.status = RoverStatus.FINISHED
+        rover.pause_rover_thread_event.set()
+    return True
+
+
 # API to print the resulting array to a text file, called path_i.txt
 def print_path_to_file(path: str, i: int, path_array: list):
     # print(f'path_array:{path_array}\n')
@@ -392,11 +474,20 @@ def validate_command_string(command_string: str):
 
 # an executor that can be called from inside a thread, waits for the lock and
 # sleeps periodically to allow for main thread to read rover's state
-def rover_executor(rover: Rover, rover_lock: threading.Lock) -> None:
-    while not rover.terminate_rover_event.is_set():
-        with rover_lock:
-            # let the rover traverse the map and execute commands
-            print("")
+def rover_executor(rover: Rover, rover_lock: threading.Lock, map_mine_lock: threading.Lock, map_array: list, mines: dict) -> None:
+    # first event checks if it is to be terminated
+    while not rover.terminate_rover_event.is_set() and rover.status != RoverStatus.ELIMINATED:
+        # second event checks if rover's thread is paused
+        while not rover.pause_rover_thread_event.is_set():
+            with rover_lock:
+                with map_mine_lock:
+                    print(f"executing next command on rover:{rover.extended_str()}")
+                    execute_next_command(rover, map_array, mines)
+                    # if its eliminated or finished, return without terminating its thread
+                    if rover.status == RoverStatus.ELIMINATED or rover.status == RoverStatus.FINISHED:
+                        rover.pause_rover_thread_event.set()
+                        return
+            time.sleep(1)
         # sleep a bit to allow the main thread to check the status or to terminate
         time.sleep(1)
         # if rover.terminate_rover_event.is_set():

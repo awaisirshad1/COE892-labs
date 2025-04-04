@@ -5,6 +5,7 @@ class Mine:
         self.x = x
         self.y = y
         self.id = id
+        self.computed_pin = None
 
     def __str__(self):
         return f"ID:{self.id}, serial_num:{self.serial_num}, coords:[{self.x},{self.y}]"
